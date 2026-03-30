@@ -134,9 +134,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 
 Thanks goes to these amazing people:
 
-<a href="https://github.com/Tracer-Cloud/open-sre-agent/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Tracer-Cloud/open-sre-agent" />
-</a>
+<!-- readme: collaborators,contributors -start -->
+<!-- readme: collaborators,contributors -end -->
 
 ---
 
