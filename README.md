@@ -229,6 +229,13 @@ Thanks goes to these amazing people:
 		</tr>
 		<tr>
             <td align="center">
+                <a href="https://github.com/yeoreums">
+                    <img src="https://avatars.githubusercontent.com/u/62932875?v=4" width="100;" alt="yeoreums"/>
+                    <br />
+                    <sub><b>Yeoreum Song</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/zeel2104">
                     <img src="https://avatars.githubusercontent.com/u/72783325?v=4" width="100;" alt="zeel2104"/>
                     <br />
