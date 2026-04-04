@@ -22,6 +22,7 @@ from app.integrations.models import (
     HoneycombIntegrationConfig,
 )
 from app.integrations.sentry import build_sentry_config
+from app.integrations.gitlab import build_gitlab_config, DEFAULT_GITLAB_BASE_URL
 from app.output import get_tracker
 from app.state import InvestigationState
 
@@ -45,6 +46,7 @@ _SERVICE_KEY_MAP = {
     "github": "github",
     "github_mcp": "github",
     "sentry": "sentry",
+    "gitlab": "gitlab",
 }
 
 
@@ -185,6 +187,17 @@ def _classify_integrations(
                 continue
             if sentry_config.organization_slug and sentry_config.auth_token:
                 resolved["sentry"] = sentry_config.model_dump()
+
+        elif key == "gitlab":
+            try:
+                gitlab_config = build_gitlab_config({
+                    "base_url": credentials.get("base_url", ""),
+                    "auth_token": credentials.get("auth_token", ""),
+                    "integration_id": integration.get("id", ""),
+                })
+            except Exception:
+                continue
+            resolved["gitlab"] = gitlab_config.model_dump()
 
         else:
             resolved[key] = {
@@ -361,6 +374,19 @@ def _load_env_integrations() -> list[dict[str, Any]]:
             "service": "sentry",
             "status": "active",
             "credentials": sentry_config.model_dump(exclude={"integration_id"}),
+        })
+
+    gitlab_access_token = os.getenv("GITLAB_ACCESS_TOKEN", "").strip()
+    if gitlab_access_token:
+        gitlab_config = build_gitlab_config({
+            "base_url": os.getenv("GITLAB_BASE_URL", DEFAULT_GITLAB_BASE_URL).strip() or DEFAULT_GITLAB_BASE_URL,
+            "auth_token": gitlab_access_token,
+        })
+        integrations.append({
+            "id": "env-gitlab",
+            "service": "gitlab",
+            "status": "active",
+            "credentials": gitlab_config.model_dump(),
         })
 
     return integrations

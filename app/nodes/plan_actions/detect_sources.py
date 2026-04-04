@@ -74,6 +74,18 @@ def _parse_repo_url(value: str) -> tuple[str, str]:
     return parts[0].strip(), parts[1].strip().removesuffix(".git")
 
 
+def _parse_gitlab_repo_url(value: str) -> str:
+    """Extract project_id (namespace/repo) from a GitLab URL."""
+    parsed = urlparse(value.strip())
+    if "gitlab" not in parsed.netloc.lower():
+        return ""
+    parts = [p for p in parsed.path.strip("/").split("/") if p]
+    if len(parts) < 2:
+        return ""
+    # Handle subgroups: return everything after the host as namespace/repo
+    return "/".join(parts).removesuffix(".git")
+
+
 def _extract_issue_id_from_url(value: str) -> str:
     parsed = urlparse(value.strip())
     parts = [part for part in parsed.path.split("/") if part]
@@ -615,6 +627,44 @@ def detect_sources(
                 "github_token": str(github_int.get("auth_token", "")).strip(),
                 "github_command": str(github_int.get("command", "")).strip(),
                 "github_args": github_int.get("args", []),
+                "connection_verified": True,
+            }
+
+    gitlab_int = (resolved_integrations or {}).get("gitlab")
+    if gitlab_int:
+        repo_url = str(
+            annotations.get("repo_url") or annotations.get("repository_url") or raw_alert.get("repo_url", "")
+        )
+        project_id = str(
+            annotations.get("gitlab_project")
+            or annotations.get("gitlab_repo")
+            or annotations.get("repository")
+            or annotations.get("repo")
+            or raw_alert.get("gitlab_project", "")
+        ).strip()
+        if not project_id and repo_url:
+            project_id = _parse_gitlab_repo_url(repo_url)
+
+        if project_id:
+            sources["gitlab"] = {
+                "project_id": project_id,
+                "ref_name": str(
+                    annotations.get("branch")
+                    or annotations.get("gitlab_ref")
+                    or annotations.get("ref_name")
+                    or raw_alert.get("branch", "")
+                ).strip() or "main",
+                "file_path": str(
+                    annotations.get("file_path")
+                    or annotations.get("gitlab_path")
+                    or raw_alert.get("file_path", "")
+                ).strip(),
+                "since": _alert_time_range_minutes(raw_alert),
+                "updated_after": str(
+                    annotations.get("startsAt") or raw_alert.get("startsAt", "")
+                ).strip(),
+                "gitlab_url": str(gitlab_int.get("base_url", "")).strip(),
+                "gitlab_token": str(gitlab_int.get("auth_token", "")).strip(),
                 "connection_verified": True,
             }
 
