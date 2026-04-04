@@ -1,11 +1,13 @@
 """
 GitLab Integration E2E Tests.
 
-Validates GitLab connectivity, tool execution, and end-to-end investigation flow.
+GitLab is a supplementary investigation source, not a primary alert source.
+These tests mirror how GitHub is used: a production alert fires (Grafana/generic),
+and the agent queries GitLab to correlate recent commits, MRs, and pipelines.
 
 Required env vars:
-    GITLAB_ACCESS_TOKEN  - Personal access token with read_api scope
-    GITLAB_PROJECT_ID    - Project to use for investigation (e.g. "myorg/myrepo")
+    GITLAB_ACCESS_TOKEN  - Personal access token with read_api + read_repository scope
+    GITLAB_PROJECT_ID    - Project path to use for investigation (e.g. "myorg/myrepo")
 
 Optional env vars:
     GITLAB_BASE_URL      - GitLab instance URL (defaults to https://gitlab.com/api/v4)
@@ -27,7 +29,6 @@ from app.integrations.gitlab import (
     validate_gitlab_config,
 )
 from tests.utils.alert_factory import create_alert
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -54,6 +55,12 @@ def _require_env() -> tuple[str, str, str]:
 
 def _gitlab_config(access_token: str, base_url: str):
     return build_gitlab_config({"base_url": base_url, "auth_token": access_token})
+
+
+def _gitlab_project_url(base_url: str, project_id: str) -> str:
+    """Build a full GitLab project URL from base_url + project path."""
+    instance = base_url.replace("/api/v4", "").rstrip("/")
+    return f"{instance}/{project_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -149,42 +156,55 @@ def test_gitlab_list_pipelines():
 
 
 # ---------------------------------------------------------------------------
-# 5. End-to-end investigation
+# 5. End-to-end investigation — GitLab as supplementary evidence source
+#
+# This is the realistic production path: a Grafana-style alert fires (high
+# error rate, service degradation, etc.) and the agent also queries GitLab
+# to correlate recent commits and MRs that may have caused it.
+#
+# detect_sources.py picks up GitLab via repo_url or annotations["repository"],
+# exactly the same way GitHub is detected — not from a "gitlab_ci" alert.
 # ---------------------------------------------------------------------------
 
 
 def test_gitlab_investigation_e2e():
     """
-    Full investigation flow with GitLab as the evidence source.
+    Full investigation flow with GitLab as a supplementary evidence source.
 
-    Creates a synthetic alert pointing at the configured GitLab project,
-    runs the investigation graph, and asserts that a root cause was produced.
+    Simulates a Grafana-style production alert that includes a repo_url
+    pointing at the configured GitLab project. The agent is expected to use
+    GitLab tools (commits, MRs) alongside the alert context to produce a
+    root cause, mirroring how GitHub is used in kubernetes/datadog e2e tests.
     """
     access_token, base_url, project_id = _require_env()
 
     from app.cli.investigate import run_investigation_cli
 
-    pipeline_name = "gitlab_ci_pipeline_failure"
+    pipeline_name = "api_service"
     run_id = f"run_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
+    repo_url = _gitlab_project_url(base_url, project_id)
 
+    # Grafana-style alert: primary signal is service degradation.
+    # repo_url is the hook that makes detect_sources.py wire in GitLab tools.
     raw_alert = create_alert(
         pipeline_name=pipeline_name,
         run_name=run_id,
         status="failed",
         timestamp=datetime.now(UTC).isoformat(),
         severity="critical",
+        alert_name="HighErrorRate",
         annotations={
-            "gitlab_project": project_id,
+            "summary": "Error rate exceeded 5% threshold on api_service",
+            "repo_url": repo_url,
             "branch": "main",
-            "error": "CI pipeline failed on main branch",
             "correlation_id": run_id,
         },
     )
 
-    print(f"\nRunning GitLab investigation for project: {project_id}")
+    print(f"\nRunning investigation — primary: Grafana alert, supplementary: GitLab ({project_id})")
 
     investigation_result = run_investigation_cli(
-        alert_name=f"Pipeline failure: {pipeline_name}",
+        alert_name="High error rate: api_service",
         pipeline_name=pipeline_name,
         severity="critical",
         raw_alert=raw_alert,
@@ -198,5 +218,6 @@ def test_gitlab_investigation_e2e():
 
     assert root_cause, (
         "Investigation produced no root cause. "
-        "Check that GITLAB_ACCESS_TOKEN has read_api scope and GITLAB_PROJECT_ID is valid."
+        "Check that GITLAB_ACCESS_TOKEN has read_api scope, GITLAB_PROJECT_ID is valid, "
+        "and an LLM key (ANTHROPIC_API_KEY or OPENAI_API_KEY) is set."
     )
