@@ -38,7 +38,7 @@ def _list_gitlab_commits_extract_params(sources: dict[str, dict]) -> dict[str, A
     gl = sources["gitlab"]
     return {
         "project_id": gl["project_id"],
-        "since": gl["since"],
+        "since": gl.get("since", ""),
         "ref_name": gl.get("ref_name", "main"),
         "per_page": 10,
         **_gl_creds(gl),
