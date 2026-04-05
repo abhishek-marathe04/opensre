@@ -21,6 +21,8 @@ from pydantic import BaseModel, ValidationError
 from app.config import (
     ANTHROPIC_LLM_CONFIG,
     GEMINI_BASE_URL,
+    GROQ_BASE_URL,
+    LM_STUDIO_BASE_URL,
     NVIDIA_BASE_URL,
     OPENAI_LLM_CONFIG,
     OPENROUTER_BASE_URL,
@@ -183,9 +185,10 @@ class OpenAILLMClient:
             raise RuntimeError(
                 f"Missing {self._api_key_env}. Set it in your environment, .env, or secure local keychain before running LLM steps."
             )
-        if api_key != self._api_key:
-            self._api_key = api_key
-            self._client = OpenAI(api_key=api_key, base_url=self._base_url, timeout=60.0)
+        effective_key = api_key or self._api_key
+        if effective_key != self._api_key:
+            self._api_key = effective_key
+            self._client = OpenAI(api_key=effective_key, base_url=self._base_url, timeout=60.0)
 
     def invoke(self, prompt_or_messages: Any) -> LLMResponse:
         self._ensure_client()
@@ -388,6 +391,29 @@ def _create_llm_client(model_type: str) -> LLMClient | OpenAILLMClient:
             max_tokens=config.max_tokens,
             base_url=NVIDIA_BASE_URL,
             api_key_env="NVIDIA_API_KEY",
+        )
+    elif provider == "lmstudio":
+        from app.config import LM_STUDIO_LLM_CONFIG
+
+        config = LM_STUDIO_LLM_CONFIG
+        model = settings.lmstudio_reasoning_model if model_type == "reasoning" else settings.lmstudio_toolcall_model
+        base_url = settings.lmstudio_base_url or LM_STUDIO_BASE_URL
+        return OpenAILLMClient(
+            model=model,
+            max_tokens=config.max_tokens,
+            base_url=base_url,
+            api_key_env="LM_STUDIO_API_KEY",
+        )
+    elif provider == "groq":
+        from app.config import GROQ_LLM_CONFIG
+
+        config = GROQ_LLM_CONFIG
+        model = settings.groq_reasoning_model if model_type == "reasoning" else settings.groq_toolcall_model
+        return OpenAILLMClient(
+            model=model,
+            max_tokens=config.max_tokens,
+            base_url=GROQ_BASE_URL,
+            api_key_env="GROQ_API_KEY",
         )
     else:
         config = ANTHROPIC_LLM_CONFIG

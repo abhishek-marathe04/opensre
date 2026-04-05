@@ -78,7 +78,7 @@ JWT_ALGORITHM = "RS256"
 JWKS_CACHE_TTL_SECONDS = 3600
 
 # LLM Model Constants
-DEFAULT_MAX_TOKENS = 4096
+DEFAULT_MAX_TOKENS = 1024
 
 # Anthropic model constants
 ANTHROPIC_REASONING_MODEL = "claude-sonnet-4-6"
@@ -100,12 +100,22 @@ GEMINI_TOOLCALL_MODEL = "gemini-3.1-flash-lite-preview"
 NVIDIA_REASONING_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 NVIDIA_TOOLCALL_MODEL = "nvidia/nemotron-3-nano-30b-a3b"
 
+# LM Studio model constants (local OpenAI-compatible server)
+LM_STUDIO_REASONING_MODEL = "meta-llama-3.1-8b-instruct"
+LM_STUDIO_TOOLCALL_MODEL = "meta-llama-3.1-8b-instruct"
+
+# Groq model constants (fast cloud inference)
+GROQ_REASONING_MODEL = "llama-3.3-70b-versatile"
+GROQ_TOOLCALL_MODEL = "llama3-groq-8b-8192-tool-use-preview"
+
 # Base URLs for OpenAI-compatible providers
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
+LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
-LLMProvider = Literal["anthropic", "openai", "openrouter", "gemini", "nvidia"]
+LLMProvider = Literal["anthropic", "openai", "openrouter", "gemini", "nvidia", "lmstudio", "groq"]
 
 
 class LLMSettings(StrictConfigModel):
@@ -117,6 +127,8 @@ class LLMSettings(StrictConfigModel):
     openrouter_api_key: str = ""
     gemini_api_key: str = ""
     nvidia_api_key: str = ""
+    lmstudio_api_key: str = "lm-studio"
+    groq_api_key: str = ""
     anthropic_reasoning_model: str = ANTHROPIC_REASONING_MODEL
     anthropic_toolcall_model: str = ANTHROPIC_TOOLCALL_MODEL
     openai_reasoning_model: str = OPENAI_REASONING_MODEL
@@ -127,13 +139,18 @@ class LLMSettings(StrictConfigModel):
     gemini_toolcall_model: str = GEMINI_TOOLCALL_MODEL
     nvidia_reasoning_model: str = NVIDIA_REASONING_MODEL
     nvidia_toolcall_model: str = NVIDIA_TOOLCALL_MODEL
+    lmstudio_reasoning_model: str = LM_STUDIO_REASONING_MODEL
+    lmstudio_toolcall_model: str = LM_STUDIO_TOOLCALL_MODEL
+    lmstudio_base_url: str = LM_STUDIO_BASE_URL
+    groq_reasoning_model: str = GROQ_REASONING_MODEL
+    groq_toolcall_model: str = GROQ_TOOLCALL_MODEL
     max_tokens: int = Field(default=DEFAULT_MAX_TOKENS, gt=0)
 
     @field_validator("provider", mode="before")
     @classmethod
     def _normalize_provider(cls, value: object) -> str:
         provider = str(value or "anthropic").strip().lower() or "anthropic"
-        valid_providers = ("anthropic", "openai", "openrouter", "gemini", "nvidia")
+        valid_providers = ("anthropic", "openai", "openrouter", "gemini", "nvidia", "lmstudio", "groq")
         if provider in valid_providers:
             return provider
         suggestion = get_close_matches(provider, valid_providers, n=1)
@@ -145,12 +162,16 @@ class LLMSettings(StrictConfigModel):
 
     @model_validator(mode="after")
     def _require_api_key_for_selected_provider(self) -> "LLMSettings":
+        # lmstudio uses a placeholder key by default — no real key required
+        if self.provider == "lmstudio":
+            return self
         provider_to_key = {
             "anthropic": self.anthropic_api_key,
             "openai": self.openai_api_key,
             "openrouter": self.openrouter_api_key,
             "gemini": self.gemini_api_key,
             "nvidia": self.nvidia_api_key,
+            "groq": self.groq_api_key,
         }
         if provider_to_key[self.provider]:
             return self
@@ -161,6 +182,7 @@ class LLMSettings(StrictConfigModel):
             "openrouter": "OPENROUTER_API_KEY",
             "gemini": "GEMINI_API_KEY",
             "nvidia": "NVIDIA_API_KEY",
+            "groq": "GROQ_API_KEY",
         }[self.provider]
         raise ValueError(f"LLM provider '{self.provider}' requires {env_var} to be set.")
 
@@ -212,6 +234,28 @@ class LLMSettings(StrictConfigModel):
                 os.getenv("NVIDIA_MODEL", NVIDIA_TOOLCALL_MODEL),
             ).strip()
             or NVIDIA_TOOLCALL_MODEL,
+            "lmstudio_api_key": os.getenv("LM_STUDIO_API_KEY", "lm-studio"),
+            "lmstudio_reasoning_model": os.getenv(
+                "LM_STUDIO_REASONING_MODEL",
+                os.getenv("LM_STUDIO_MODEL", LM_STUDIO_REASONING_MODEL),
+            ).strip()
+            or LM_STUDIO_REASONING_MODEL,
+            "lmstudio_toolcall_model": os.getenv(
+                "LM_STUDIO_TOOLCALL_MODEL",
+                os.getenv("LM_STUDIO_MODEL", LM_STUDIO_TOOLCALL_MODEL),
+            ).strip()
+            or LM_STUDIO_TOOLCALL_MODEL,
+            "lmstudio_base_url": os.getenv("LM_STUDIO_BASE_URL", LM_STUDIO_BASE_URL),
+            "groq_reasoning_model": os.getenv(
+                "GROQ_REASONING_MODEL",
+                os.getenv("GROQ_MODEL", GROQ_REASONING_MODEL),
+            ).strip()
+            or GROQ_REASONING_MODEL,
+            "groq_toolcall_model": os.getenv(
+                "GROQ_TOOLCALL_MODEL",
+                os.getenv("GROQ_MODEL", GROQ_TOOLCALL_MODEL),
+            ).strip()
+            or GROQ_TOOLCALL_MODEL,
             "max_tokens": DEFAULT_MAX_TOKENS,
         })
 # LLM Provider Configs
@@ -242,6 +286,18 @@ GEMINI_LLM_CONFIG = LLMModelConfig(
 NVIDIA_LLM_CONFIG = LLMModelConfig(
     reasoning_model=NVIDIA_REASONING_MODEL,
     toolcall_model=NVIDIA_TOOLCALL_MODEL,
+    max_tokens=DEFAULT_MAX_TOKENS,
+)
+
+LM_STUDIO_LLM_CONFIG = LLMModelConfig(
+    reasoning_model=LM_STUDIO_REASONING_MODEL,
+    toolcall_model=LM_STUDIO_TOOLCALL_MODEL,
+    max_tokens=DEFAULT_MAX_TOKENS,
+)
+
+GROQ_LLM_CONFIG = LLMModelConfig(
+    reasoning_model=GROQ_REASONING_MODEL,
+    toolcall_model=GROQ_TOOLCALL_MODEL,
     max_tokens=DEFAULT_MAX_TOKENS,
 )
 
