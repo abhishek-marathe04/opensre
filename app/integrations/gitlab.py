@@ -128,15 +128,17 @@ def get_gitlab_commits(
     """Fetch gitlab commits for project."""
 
     encoded_project_id = quote(project_id, safe="")
+    params: list[tuple[str, str | int | float | bool | None]] = [
+        ("ref_name", ref_name),
+        ("per_page", per_page),
+    ]
+    if since:
+        params.append(("since", since))
     payload = _request_json(
         config,
         "GET",
         f"/projects/{encoded_project_id}/repository/commits",
-        params=[
-            ("ref_name", ref_name),
-            ("since", since),
-            ("per_page", per_page),
-        ],
+        params=params,
     )
     return payload if isinstance(payload, list) else []
 
