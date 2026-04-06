@@ -167,7 +167,7 @@ def test_validate_gitlab_config_returns_ok_on_success(
 ) -> None:
     monkeypatch.setattr(
         "app.integrations.gitlab.validate_gitlab_connection",
-        lambda *, _config: {"username": "gl-user"},
+        lambda *, config: {"username": "gl-user"},  # noqa: ARG005
     )
 
     result = validate_gitlab_config(_make_config())
@@ -201,7 +201,7 @@ def test_validate_gitlab_config_handles_generic_exception(
 ) -> None:
     monkeypatch.setattr(
         "app.integrations.gitlab.validate_gitlab_connection",
-        lambda *, _config: (_ for _ in ()).throw(RuntimeError("connection refused")),
+        lambda *, config: (_ for _ in ()).throw(RuntimeError("connection refused")),  # noqa: ARG005
     )
 
     result = validate_gitlab_config(_make_config())
