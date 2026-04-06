@@ -106,20 +106,11 @@ GEMINI_TOOLCALL_MODEL = "gemini-3.1-flash-lite-preview"
 NVIDIA_REASONING_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 NVIDIA_TOOLCALL_MODEL = "nvidia/nemotron-3-nano-30b-a3b"
 
-# LM Studio model constants (local OpenAI-compatible server)
-LM_STUDIO_REASONING_MODEL = "meta-llama-3.1-8b-instruct"
-LM_STUDIO_TOOLCALL_MODEL = "meta-llama-3.1-8b-instruct"
-
-# Groq model constants (fast cloud inference)
-GROQ_REASONING_MODEL = "llama-3.3-70b-versatile"
-GROQ_TOOLCALL_MODEL = "llama3-groq-8b-8192-tool-use-preview"
 
 # Base URLs for OpenAI-compatible providers
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
-LM_STUDIO_BASE_URL = "http://localhost:1234/v1"
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 
 # Amazon Bedrock model constants (US cross-region inference profile IDs)
 BEDROCK_REASONING_MODEL = "us.anthropic.claude-sonnet-4-6"
@@ -181,7 +172,6 @@ class LLMSettings(StrictConfigModel):
             "openrouter": self.openrouter_api_key,
             "gemini": self.gemini_api_key,
             "nvidia": self.nvidia_api_key,
-            "groq": self.groq_api_key,
         }
         if provider_to_key[self.provider]:
             return self
@@ -192,7 +182,6 @@ class LLMSettings(StrictConfigModel):
             "openrouter": "OPENROUTER_API_KEY",
             "gemini": "GEMINI_API_KEY",
             "nvidia": "NVIDIA_API_KEY",
-            "groq": "GROQ_API_KEY",
         }[self.provider]
         raise ValueError(f"LLM provider '{self.provider}' requires {env_var} to be set.")
 
