@@ -50,14 +50,11 @@ _SERVICE_KEY_MAP = {
     "github": "github",
     "github_mcp": "github",
     "sentry": "sentry",
-<<<<<<< HEAD
     "gitlab": "gitlab",
-=======
     "mongodb": "mongodb",
     "mongo": "mongodb",
     "vercel": "vercel",
     "opsgenie": "opsgenie",
->>>>>>> main
 }
 
 

@@ -22,8 +22,6 @@ from pydantic import BaseModel, ValidationError
 from app.config import (
     ANTHROPIC_LLM_CONFIG,
     GEMINI_BASE_URL,
-    GROQ_BASE_URL,
-    LM_STUDIO_BASE_URL,
     NVIDIA_BASE_URL,
     OPENAI_LLM_CONFIG,
     OPENROUTER_BASE_URL,
@@ -240,10 +238,9 @@ class OpenAILLMClient:
             raise RuntimeError(
                 f"Missing {self._api_key_env}. Set it in your environment, .env, or secure local keychain before running LLM steps."
             )
-        effective_key = api_key or self._api_key
-        if effective_key != self._api_key:
-            self._api_key = effective_key
-            self._client = OpenAI(api_key=effective_key, base_url=self._base_url, timeout=60.0)
+        if api_key != self._api_key:
+            self._api_key = api_key
+            self._client = OpenAI(api_key=api_key, base_url=self._base_url, timeout=60.0)
 
     def invoke(self, prompt_or_messages: Any) -> LLMResponse:
         self._ensure_client()
