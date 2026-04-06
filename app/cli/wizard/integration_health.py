@@ -320,7 +320,7 @@ def validate_gitlab_integration(
     base_url: str,
     auth_token: str,
 ) -> IntegrationHealthResult:
-    """Validate Sentry connectivity with an organization issues query."""
+    """Validate Gitlab connectivity with an users api."""
     config = build_gitlab_config(
         {
             "base_url": base_url,

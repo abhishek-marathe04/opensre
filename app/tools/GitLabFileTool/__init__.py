@@ -75,7 +75,18 @@ def get_gitlab_file_contents(
         return {"source": "gitlab", "available": False, "error": f"File too large to read ({result['size']} bytes)", "file": {}}
 
     content_raw = result.get("content", "")
-    content_decoded = base64.b64decode(content_raw).decode("utf-8") if content_raw else ""
+    if content_raw:
+        try:
+            content_decoded = base64.b64decode(content_raw).decode("utf-8")
+        except UnicodeDecodeError:
+            return {
+                "source": "gitlab",
+                "available": False,
+                "error": f"File '{file_path}' is not UTF-8 text (binary file); cannot display contents.",
+                "file": {},
+            }
+    else:
+        content_decoded = ""
 
     return {
         "source": "gitlab",
