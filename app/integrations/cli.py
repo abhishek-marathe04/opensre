@@ -7,7 +7,7 @@ Usage:
     python -m app.integrations remove <service>
     python -m app.integrations verify [service] [--send-slack-test]
 
-Supported services: aws, coralogix, datadog, grafana, honeycomb, mongodb, slack, opensearch, rds, tracer, github, sentry, vercel
+Supported services: aws, coralogix, datadog, discord, grafana, honeycomb, mongodb, slack, opensearch, rds, tracer, github, sentry, vercel
 """
 
 from __future__ import annotations
@@ -44,6 +44,7 @@ _SECRET_KEYS = frozenset({
     "api_token",
     "api_key",
     "app_key",
+    "bot_token",
     "password",
     "secret_access_key",
     "session_token",
@@ -291,6 +292,37 @@ def _setup_mongodb() -> None:
         },
     )
 
+def _register_discord_slash_command(application_id: str, bot_token: str) -> None:
+    import httpx
+
+    url = f"https://discord.com/api/v10/applications/{application_id}/commands"
+    payload = {
+        "name": "investigate",
+        "description": "Trigger an OpenSRE investigation",
+        "options": [
+            {"name": "alert", "description": "Alert JSON or description", "type": 3, "required": True}
+        ],
+    }
+    resp = httpx.put(url, json=payload, headers={"Authorization": f"Bot {bot_token}"}, timeout=10)
+    if resp.is_success:
+        print("  ✓ /investigate slash command registered.")
+    else:
+        print(f"  ⚠ Slash command registration failed ({resp.status_code}): {resp.text}")
+
+
+def _setup_discord() -> None:
+    bot_token = _p("Discord bot token", secret=True)
+    application_id = _p("Discord application ID")
+    public_key = _p("Discord public key (from Developer Portal)")
+    default_channel_id = _p("Default channel ID (optional)")
+    upsert_integration("discord", {"credentials": {
+        "bot_token": bot_token,
+        "application_id": application_id,
+        "public_key": public_key,
+        "default_channel_id": default_channel_id,
+    }})
+    _register_discord_slash_command(application_id, bot_token)
+
 
 _HANDLERS: dict[str, Any] = {
     "aws": _setup_aws,
@@ -306,6 +338,7 @@ _HANDLERS: dict[str, Any] = {
     "github": _setup_github,
     "sentry": _setup_sentry,
     "mongodb": _setup_mongodb,
+    "discord": _setup_discord,
 }
 
 SUPPORTED = ", ".join(_HANDLERS)
