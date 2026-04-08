@@ -7,7 +7,7 @@ Usage:
     python -m app.integrations remove <service>
     python -m app.integrations verify [service] [--send-slack-test]
 
-Supported services: aws, coralogix, datadog, discord, grafana, honeycomb, mongodb, slack, opensearch, rds, tracer, github, sentry, vercel
+Supported services: aws, coralogix, datadog, discord, grafana, honeycomb, mongodb, slack, opensearch, rds, tracer, github, gitlab, sentry, vercel
 """
 
 from __future__ import annotations
@@ -30,6 +30,10 @@ from app.integrations.verify import (
     format_verification_results,
     verification_exit_code,
     verify_integrations,
+)
+
+from app.integrations.gitlab import (
+    DEFAULT_GITLAB_BASE_URL
 )
 
 _B = "\033[1m"
@@ -241,6 +245,19 @@ def _setup_github() -> None:
     credentials["toolsets"] = [part.strip() for part in toolsets.split(",") if part.strip()]
     upsert_integration("github", {"credentials": credentials})
 
+def _setup_gitlab() -> None:
+    base_url = _p("Gitlab base URL", default=DEFAULT_GITLAB_BASE_URL)
+    auth_token = _p("Gitlab access token", secret=True)
+    upsert_integration(
+        "gitlab",
+        {
+            "credentials": {
+                "base_url": base_url,
+                "auth_token": auth_token
+            }
+        },
+    )
+
 
 def _setup_sentry() -> None:
     base_url = _p("Sentry URL", default="https://sentry.io")
@@ -336,6 +353,7 @@ _HANDLERS: dict[str, Any] = {
     "tracer": _setup_tracer,
     "vercel": _setup_vercel,
     "github": _setup_github,
+    "gitlab": _setup_gitlab,
     "sentry": _setup_sentry,
     "mongodb": _setup_mongodb,
     "discord": _setup_discord,
