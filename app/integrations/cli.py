@@ -18,6 +18,7 @@ from typing import Any, NoReturn
 
 import questionary
 
+from app.integrations.gitlab import DEFAULT_GITLAB_BASE_URL
 from app.integrations.store import (
     STORE_PATH,
     get_integration,
@@ -30,10 +31,6 @@ from app.integrations.verify import (
     format_verification_results,
     verification_exit_code,
     verify_integrations,
-)
-
-from app.integrations.gitlab import (
-    DEFAULT_GITLAB_BASE_URL
 )
 
 _B = "\033[1m"

@@ -29,6 +29,7 @@ def _build_mr_note(slack_message: str) -> str:
 
 def generate_report(state: InvestigationState) -> dict:
     """Generate and publish the final RCA report."""
+    from app.utils.discord_delivery import send_discord_report
     from app.utils.slack_delivery import build_action_blocks, send_slack_report
 
     ctx = build_report_context(state)
