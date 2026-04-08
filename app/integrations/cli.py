@@ -317,7 +317,7 @@ def _register_discord_slash_command(application_id: str, bot_token: str) -> None
             {"name": "alert", "description": "Alert JSON or description", "type": 3, "required": True}
         ],
     }
-    resp = httpx.put(url, json=payload, headers={"Authorization": f"Bot {bot_token}"}, timeout=10)
+    resp = httpx.put(url, json=[payload], headers={"Authorization": f"Bot {bot_token}"}, timeout=10)
     if resp.is_success:
         print("  ✓ /investigate slash command registered.")
     else:

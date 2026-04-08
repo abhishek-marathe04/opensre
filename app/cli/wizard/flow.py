@@ -1028,7 +1028,11 @@ def _configure_discord() -> tuple[str, str]:
             from app.integrations.cli import _register_discord_slash_command
 
             _register_discord_slash_command(application_id, bot_token)
-            env_path = sync_env_values({})
+            env_path = sync_env_values({
+                "DISCORD_BOT_TOKEN": bot_token,
+                "DISCORD_APPLICATION_ID": application_id,
+                "DISCORD_PUBLIC_KEY": public_key,
+            })
             return "Discord", str(env_path)
         _console.print("[dim]Try again or press Ctrl+C to cancel.[/]")
 
