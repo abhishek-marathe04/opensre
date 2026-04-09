@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import types
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -205,3 +204,17 @@ def test_send_discord_report_returns_false_on_api_error(monkeypatch: pytest.Monk
     ok, error = send_discord_report("Report", {"channel_id": "chan-1", "bot_token": "tok"})
     assert ok is False
     assert "Forbidden" in error
+
+
+def test_send_discord_report_truncates_description_to_4096(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        "app.utils.discord_delivery.httpx.post",
+        lambda **kw: (captured.update({"embeds": kw["json"].get("embeds", [])}) or _mock_response(200, {"id": "m-1"})),  # type: ignore[misc]
+    )
+    long_report = "x" * 5000
+    send_discord_report(long_report, {"channel_id": "chan-1", "bot_token": "tok"})
+    description = captured["embeds"][0]["description"]
+    assert len(description) == 4096
+    assert description.endswith("…")

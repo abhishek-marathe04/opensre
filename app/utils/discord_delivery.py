@@ -68,14 +68,22 @@ def create_discord_thread(channel_id: str, message_id: str, name:str, bot_token:
         return (False, str(exc), "")
 
 
+_EMBED_TITLE_LIMIT = 256
+_EMBED_DESCRIPTION_LIMIT = 4096
+
+
+def _truncate(text: str, limit: int) -> str:
+    return (text[: limit - 1] + "…") if len(text) > limit else text
+
+
 def send_discord_report(report: str, discord_ctx: dict[str, Any]) -> tuple[bool, str]:
     channel_id: str = str(discord_ctx.get("channel_id") or "")
     thread_id: str = str(discord_ctx.get("thread_id") or "")
     bot_token: str = str(discord_ctx.get("bot_token") or "")
     embed = {
-        "title": "Investigation Complete",
+        "title": _truncate("Investigation Complete", _EMBED_TITLE_LIMIT),
         "color": 15158332,
-        "description": report,
+        "description": _truncate(report, _EMBED_DESCRIPTION_LIMIT),
         "footer": {"text": "OpenSRE Investigation"},
     }
     target = thread_id if thread_id else channel_id

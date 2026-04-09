@@ -231,8 +231,9 @@ async def _run_discord_investigation(interaction: DiscordInteraction) -> None:
     def _truncate(text: str, limit: int = 1024) -> str:
         return (text[: limit - 1] + "…") if len(text) > limit else text
 
+    raw_title = f"Investigation Complete: {resolved_name}"
     embed: dict[str, Any] = {
-        "title": f"Investigation Complete: {resolved_name}",
+        "title": _truncate(raw_title, 256),
         "color": 0x95A5A6 if is_noise else 0xE74C3C,
         "fields": [
             {"name": "Root Cause", "value": _truncate(root_cause), "inline": False},
@@ -241,29 +242,12 @@ async def _run_discord_investigation(interaction: DiscordInteraction) -> None:
         "footer": {"text": "OpenSRE Investigation"},
     }
 
-    # Post via interaction followup webhook (primary — no bot token needed)
+    # Post via interaction followup webhook (the deferred response requires this)
     app_id = interaction.application_id or _DISCORD_APPLICATION_ID
     if app_id and interaction.token:
         await asyncio.to_thread(
             _discord_post_followup, app_id, interaction.token, embeds=[embed]
         )
-
-    # If a bot token and channel are available, also create a dedicated thread
-    if _DISCORD_BOT_TOKEN and interaction.channel_id:
-        ok, _, message_id = await asyncio.to_thread(
-            post_discord_message,
-            interaction.channel_id,
-            [embed],
-            _DISCORD_BOT_TOKEN,
-        )
-        if ok and message_id:
-            await asyncio.to_thread(
-                create_discord_thread,
-                interaction.channel_id,
-                message_id,
-                f"Investigation: {resolved_name}",
-                _DISCORD_BOT_TOKEN,
-            )
 
 
 # ---------------------------------------------------------------------------
