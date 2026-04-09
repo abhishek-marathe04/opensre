@@ -14,7 +14,7 @@ def post_discord_message(channel_id: str, embeds:list[dict[str, Any]], bot_token
 
     Returns True on success, False on expected failures.
     """
-    logger.warning("[discord] post message params channel_id: %s", channel_id)
+    logger.debug("[discord] post message params channel_id: %s", channel_id)
     try:
         resp = httpx.post(
             f"https://discord.com/api/v10/channels/{channel_id}/messages",
@@ -29,7 +29,7 @@ def post_discord_message(channel_id: str, embeds:list[dict[str, Any]], bot_token
         error_message = ""
         if resp.status_code not in (200, 201):
             logger.warning("[discord] post message failed: %s", resp.status_code)
-            logger.warning(f"[discord] api response {data}")
+            logger.warning("[discord] api response %s", data)
             error_message = data.get("message", data.get("error", "unknown"))
             logger.warning("[discord] post message failed: %s", error_message)
             return (False, error_message, "")
