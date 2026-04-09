@@ -147,7 +147,6 @@ class DeepHealthCheck(BaseModel):
 # ---------------------------------------------------------------------------
 
 _DISCORD_PUBLIC_KEY = os.getenv("DISCORD_PUBLIC_KEY", "")
-_DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
 _DISCORD_APPLICATION_ID = os.getenv("DISCORD_APPLICATION_ID", "")
 
 
