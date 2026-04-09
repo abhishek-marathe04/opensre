@@ -43,12 +43,37 @@
         "group": "Integrations",
         "pages": [
           "intergrations-overview",
-          "datadog",
-          "grafana",
-          "mongodb",
-          "slack",
-          "discord",
-          "gitlab"
+          {
+            "group": "Enterprise",
+            "defaultOpen": true,
+            "pages": [
+              "datadog",
+              "grafana",
+              "slack",
+              "aws"
+            ]
+          },
+          {
+            "group": "Local",
+            "defaultOpen": true,
+            "pages": [
+              "mongodb",
+              "honeycomb",
+              "coralogix",
+              "sentry",
+              "github",
+              "gitlab",
+              "bitbucket",
+              "vercel",
+              "kafka",
+              "clickhouse",
+              "opsgenie",
+              "jira",
+              "prefect",
+              "google-docs",
+              "discord"
+            ]
+          }
         ]
       },
       {
