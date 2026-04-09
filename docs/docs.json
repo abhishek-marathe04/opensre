@@ -46,7 +46,9 @@
           "datadog",
           "grafana",
           "mongodb",
-          "slack"
+          "slack",
+          "discord",
+          "gitlab"
         ]
       },
       {
