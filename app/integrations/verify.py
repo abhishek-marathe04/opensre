@@ -12,6 +12,7 @@ import requests
 from app.auth.jwt_auth import extract_org_id_from_jwt
 from app.config import get_tracer_base_url
 from app.integrations.github_mcp import build_github_mcp_config, validate_github_mcp_config
+from app.integrations.mariadb import build_mariadb_config, validate_mariadb_config
 from app.integrations.models import (
     AWSIntegrationConfig,
     CoralogixIntegrationConfig,
@@ -25,6 +26,7 @@ from app.integrations.models import (
 )
 from app.integrations.mongodb import build_mongodb_config, validate_mongodb_config
 from app.integrations.mongodb_atlas import build_mongodb_atlas_config, validate_mongodb_atlas_config
+from app.integrations.postgresql import build_postgresql_config, validate_postgresql_config
 from app.integrations.sentry import build_sentry_config, validate_sentry_config
 from app.integrations.store import load_integrations
 from app.nodes.resolve_integrations.node import (
@@ -50,7 +52,9 @@ SUPPORTED_VERIFY_SERVICES = (
     "github",
     "sentry",
     "mongodb",
+    "postgresql",
     "mongodb_atlas",
+    "mariadb",
     "google_docs",
     "vercel",
     "opsgenie",
@@ -224,15 +228,44 @@ def resolve_effective_integrations() -> dict[str, dict[str, Any]]:
                 },
             }
 
+    postgresql_integration = classified_integrations.get("postgresql")
+    if isinstance(postgresql_integration, dict):
+        effective["postgresql"] = {
+            "source": source_by_service.get("postgresql", "local env"),
+            "config": postgresql_integration,
+        }
+    else:
+        pg_host = os.getenv("POSTGRESQL_HOST", "").strip()
+        pg_database = os.getenv("POSTGRESQL_DATABASE", "").strip()
+        if pg_host and pg_database:
+            _pg_port = os.getenv("POSTGRESQL_PORT", "").strip()
+            effective["postgresql"] = {
+                "source": "local env",
+                "config": {
+                    "host": pg_host,
+                    "port": int(_pg_port) if _pg_port.isdigit() else 5432,
+                    "database": pg_database,
+                    "username": os.getenv("POSTGRESQL_USERNAME", "postgres").strip() or "postgres",
+                    "password": os.getenv("POSTGRESQL_PASSWORD", "").strip(),
+                    "ssl_mode": os.getenv("POSTGRESQL_SSL_MODE", "prefer").strip() or "prefer",
+                },
+            }
+
     mongodb_atlas_integration = classified_integrations.get("mongodb_atlas")
     if isinstance(mongodb_atlas_integration, dict):
         effective["mongodb_atlas"] = {
             "source": source_by_service.get("mongodb_atlas", "local env"),
             "config": {
                 "api_public_key": str(mongodb_atlas_integration.get("api_public_key", "")).strip(),
-                "api_private_key": str(mongodb_atlas_integration.get("api_private_key", "")).strip(),
+                "api_private_key": str(
+                    mongodb_atlas_integration.get("api_private_key", "")
+                ).strip(),
                 "project_id": str(mongodb_atlas_integration.get("project_id", "")).strip(),
-                "base_url": str(mongodb_atlas_integration.get("base_url", "https://cloud.mongodb.com/api/atlas/v2")).strip(),
+                "base_url": str(
+                    mongodb_atlas_integration.get(
+                        "base_url", "https://cloud.mongodb.com/api/atlas/v2"
+                    )
+                ).strip(),
             },
         }
     else:
@@ -245,7 +278,38 @@ def resolve_effective_integrations() -> dict[str, dict[str, Any]]:
                     "api_public_key": atlas_pub,
                     "api_private_key": atlas_priv,
                     "project_id": os.getenv("MONGODB_ATLAS_PROJECT_ID", "").strip(),
-                    "base_url": os.getenv("MONGODB_ATLAS_BASE_URL", "https://cloud.mongodb.com/api/atlas/v2").strip(),
+                    "base_url": os.getenv(
+                        "MONGODB_ATLAS_BASE_URL", "https://cloud.mongodb.com/api/atlas/v2"
+                    ).strip(),
+                },
+            }
+
+    mariadb_integration = classified_integrations.get("mariadb")
+    if isinstance(mariadb_integration, dict):
+        effective["mariadb"] = {
+            "source": source_by_service.get("mariadb", "local env"),
+            "config": {
+                "host": str(mariadb_integration.get("host", "")).strip(),
+                "port": mariadb_integration.get("port", 3306),
+                "database": str(mariadb_integration.get("database", "")).strip(),
+                "username": str(mariadb_integration.get("username", "")).strip(),
+                "password": str(mariadb_integration.get("password", "")).strip(),
+                "ssl": mariadb_integration.get("ssl", True),
+            },
+        }
+    else:
+        mariadb_host = os.getenv("MARIADB_HOST", "").strip()
+        mariadb_database = os.getenv("MARIADB_DATABASE", "").strip()
+        if mariadb_host and mariadb_database:
+            effective["mariadb"] = {
+                "source": "local env",
+                "config": {
+                    "host": mariadb_host,
+                    "port": int(os.getenv("MARIADB_PORT", "3306").strip() or "3306") if os.getenv("MARIADB_PORT", "3306").strip().isdigit() else 3306,
+                    "database": mariadb_database,
+                    "username": os.getenv("MARIADB_USERNAME", "").strip(),
+                    "password": os.getenv("MARIADB_PASSWORD", "").strip(),
+                    "ssl": os.getenv("MARIADB_SSL", "true").strip().lower() in ("true", "1", "yes"),
                 },
             }
 
@@ -706,11 +770,33 @@ def _verify_mongodb(source: str, config: dict[str, Any]) -> dict[str, str]:
     )
 
 
+def _verify_postgresql(source: str, config: dict[str, Any]) -> dict[str, str]:
+    postgresql_config = build_postgresql_config(config)
+    result = validate_postgresql_config(postgresql_config)
+    return _result(
+        "postgresql",
+        source,
+        "passed" if result.ok else "failed",
+        result.detail,
+    )
+
+
 def _verify_mongodb_atlas(source: str, config: dict[str, Any]) -> dict[str, str]:
     atlas_config = build_mongodb_atlas_config(config)
     result = validate_mongodb_atlas_config(atlas_config)
     return _result(
         "mongodb_atlas",
+        source,
+        "passed" if result.ok else "failed",
+        result.detail,
+    )
+
+
+def _verify_mariadb(source: str, config: dict[str, Any]) -> dict[str, str]:
+    mariadb_config = build_mariadb_config(config)
+    result = validate_mariadb_config(mariadb_config)
+    return _result(
+        "mariadb",
         source,
         "passed" if result.ok else "failed",
         result.detail,
@@ -942,8 +1028,12 @@ def verify_integrations(
             results.append(_verify_sentry(source, config))
         elif current_service == "mongodb":
             results.append(_verify_mongodb(source, config))
+        elif current_service == "postgresql":
+            results.append(_verify_postgresql(source, config))
         elif current_service == "mongodb_atlas":
             results.append(_verify_mongodb_atlas(source, config))
+        elif current_service == "mariadb":
+            results.append(_verify_mariadb(source, config))
         elif current_service == "google_docs":
             results.append(_verify_google_docs(source, config))
         elif current_service == "vercel":

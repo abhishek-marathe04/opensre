@@ -60,6 +60,8 @@ dependencies = [
     "pymongo>=4.6.0,<6.0.0",
     # Signature verfication for discord
     "PyNaCl>=1.5.0",
+    # MariaDB
+    "pymysql>=1.1.0,<2.0.0",
 ]
 
 [project.urls]
@@ -81,6 +83,8 @@ dev = [
     "ruff>=0.4.0",
     "mypy>=1.10.0",
     "types-requests",
+    "types-psycopg2",
+    "types-PyMySQL",
     "types-PyYAML",
     "boto3-stubs[essential]",
 ]
@@ -89,6 +93,9 @@ kafka = [
 ]
 clickhouse = [
     "clickhouse-connect>=0.8.0",
+]
+postgresql = [
+    "psycopg2-binary>=2.9.0,<3.0.0",
 ]
 
 [tool.setuptools.packages.find]

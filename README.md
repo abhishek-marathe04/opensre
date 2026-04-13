@@ -1,10 +1,10 @@
 <div align="center">
 
 <p align="center">
-  <img width="2136" height="476" alt="opensre-github-banner" src="https://github.com/user-attachments/assets/68ac81ff-dca0-45fb-9b92-9cc342f173f6" />
+  <img src="docs/logo/opensre-logomark-full.svg" alt="OpenSRE" width="360" />
 </p>
 
-<h1>OpenSRE: Build Your Own AI SRE Agents</h1>
+<h3>OpenSRE: Build Your Own AI SRE Agents</h3>
 
 <p>The open-source framework for AI SRE agents, and the training and evaluation environment they need to improve. Connect the 40+ tools you already run, define your own workflows, and investigate incidents on your own infrastructure.</p>
 
@@ -18,9 +18,8 @@
 
 <p align="center">
   <strong>
-    <a href="https://app.tracer.cloud/">Getting Started</a> ·
-    <a href="https://tracer.cloud/">Tracer Agent</a> ·
-    <a href="https://tracer.mintlify.app/">Docs</a> ·
+    <a href="https://www.opensre.com/docs/quickstart">Quickstart</a> ·
+    <a href="https://www.opensre.com/docs">Docs</a> ·
     <a href="https://tracer.mintlify.app/faq">FAQ</a> ·
     <a href="https://trust.tracer.cloud/">Security</a>
   </strong>
@@ -82,6 +81,33 @@ pipx install opensre
 opensre onboard
 opensre investigate -i tests/e2e/kubernetes/fixtures/datadog_k8s_alert.json
 opensre update
+```
+
+---
+
+## Remote Hosted Ops (Railway)
+
+After deploying a hosted service, you can run post-deploy operations from the CLI:
+
+```bash
+# inspect service status, URL, deployment metadata
+opensre remote ops --provider railway --project <project> --service <service> status
+
+# tail recent logs
+opensre remote ops --provider railway --project <project> --service <service> logs --lines 200
+
+# stream logs live
+opensre remote ops --provider railway --project <project> --service <service> logs --follow
+
+# trigger restart/redeploy
+opensre remote ops --provider railway --project <project> --service <service> restart --yes
+```
+
+OpenSRE saves your last used `provider`/`project`/`service`, so you can run:
+
+```bash
+opensre remote ops status
+opensre remote ops logs --follow
 ```
 
 ---
@@ -386,13 +412,6 @@ Thanks goes to these amazing people:
         </a>
     </td>
             <td align="center">
-        <a href="https://github.com/qorexdev">
-            <img src="https://avatars.githubusercontent.com/u/248982649?v=4" width="100" alt="qorexdev"/>
-            <br />
-            <sub><b>qorexdev</b></sub>
-        </a>
-    </td>
-            <td align="center">
         <a href="https://github.com/ramandagar">
             <img src="https://avatars.githubusercontent.com/u/89700171?v=4" width="100" alt="ramandagar"/>
             <br />
@@ -406,8 +425,6 @@ Thanks goes to these amazing people:
             <sub><b>mvanhorn</b></sub>
         </a>
     </td>
-		</tr>
-		<tr>
             <td align="center">
         <a href="https://github.com/abhishek-marathe04">
             <img src="https://avatars.githubusercontent.com/u/175933950?v=4" width="100" alt="abhishek-marathe04"/>
@@ -415,6 +432,8 @@ Thanks goes to these amazing people:
             <sub><b>abhishek-marathe04</b></sub>
         </a>
     </td>
+		</tr>
+		<tr>
             <td align="center">
         <a href="https://github.com/yashksaini-coder">
             <img src="https://avatars.githubusercontent.com/u/115717039?v=4" width="100" alt="yashksaini-coder"/>
@@ -434,6 +453,20 @@ Thanks goes to these amazing people:
             <img src="https://avatars.githubusercontent.com/u/34988899?v=4" width="100" alt="Bahtya"/>
             <br />
             <sub><b>Bahtya</b></sub>
+        </a>
+    </td>
+            <td align="center">
+        <a href="https://github.com/mayankbharati-ops">
+            <img src="https://avatars.githubusercontent.com/u/245952278?v=4" width="100" alt="mayankbharati-ops"/>
+            <br />
+            <sub><b>mayankbharati-ops</b></sub>
+        </a>
+    </td>
+            <td align="center">
+        <a href="https://github.com/harshareddy832">
+            <img src="https://avatars.githubusercontent.com/u/53609097?v=4" width="100" alt="harshareddy832"/>
+            <br />
+            <sub><b>harshareddy832</b></sub>
         </a>
     </td>
 		</tr>
