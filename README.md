@@ -469,6 +469,13 @@ Thanks goes to these amazing people:
             <sub><b>gautamjain1503</b></sub>
         </a>
     </td>
+            <td align="center">
+        <a href="https://github.com/mudittt">
+            <img src="https://avatars.githubusercontent.com/u/96051296?v=4" width="100" alt="mudittt"/>
+            <br />
+            <sub><b>mudittt</b></sub>
+        </a>
+    </td>
 		</tr>
 	</tbody>
 </table>
