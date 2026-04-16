@@ -341,6 +341,58 @@ def _map_github_commits(data: dict) -> dict:
     }
 
 
+def _map_eks_pods(data: dict) -> dict:
+    return {
+        "eks_pods": data.get("pods", []),
+        "eks_failing_pods": data.get("failing_pods", []),
+        "eks_high_restart_pods": data.get("high_restart_pods", []),
+        "eks_total_pods": data.get("total_pods", 0),
+    }
+
+
+def _map_eks_events(data: dict) -> dict:
+    return {
+        "eks_events": data.get("warning_events", []),
+        "eks_total_warning_count": data.get("total_warning_count", 0),
+    }
+
+
+def _map_eks_deployments(data: dict) -> dict:
+    return {
+        "eks_deployments": data.get("deployments", []),
+        "eks_degraded_deployments": data.get("degraded_deployments", []),
+        "eks_total_deployments": data.get("total_deployments", 0),
+    }
+
+
+def _map_eks_node_health(data: dict) -> dict:
+    return {
+        "eks_node_health": data.get("nodes", []),
+        "eks_not_ready_count": data.get("not_ready_count", 0),
+        "eks_total_nodes": data.get("total_nodes", 0),
+    }
+
+
+def _map_eks_pod_logs(data: dict) -> dict:
+    return {
+        "eks_pod_logs": data.get("logs", ""),
+        "eks_pod_logs_pod_name": data.get("pod_name", ""),
+        "eks_pod_logs_namespace": data.get("namespace", ""),
+    }
+
+
+def _map_eks_deployment_status(data: dict) -> dict:
+    return {
+        "eks_deployment_status": {
+            "deployment_name": data.get("deployment_name"),
+            "desired_replicas": data.get("desired_replicas"),
+            "ready_replicas": data.get("ready_replicas"),
+            "unavailable_replicas": data.get("unavailable_replicas"),
+            "conditions": data.get("conditions", []),
+        }
+    }
+
+
 EVIDENCE_MAPPERS: dict[str, Callable[[dict], dict]] = {
     "get_failed_jobs": _map_failed_jobs,
     "get_failed_tools": _map_failed_tools,
@@ -376,6 +428,12 @@ EVIDENCE_MAPPERS: dict[str, Callable[[dict], dict]] = {
     "search_github_code": _map_github_code_search,
     "get_github_file_contents": _map_github_file_contents,
     "list_github_commits": _map_github_commits,
+    "list_eks_pods": _map_eks_pods,
+    "get_eks_events": _map_eks_events,
+    "list_eks_deployments": _map_eks_deployments,
+    "get_eks_node_health": _map_eks_node_health,
+    "get_eks_pod_logs": _map_eks_pod_logs,
+    "get_eks_deployment_status": _map_eks_deployment_status,
 }
 
 
@@ -559,6 +617,21 @@ def build_evidence_summary(execution_results: dict[str, ActionExecutionResult]) 
                 summary_parts.append("github:file contents retrieved")
             elif action_name == "list_github_commits" and data.get("commits"):
                 summary_parts.append(f"github:{len(data['commits'])} commits")
+            elif action_name == "list_eks_pods" and data.get("pods"):
+                failing = len(data.get("failing_pods", []))
+                summary_parts.append(f"eks:{data.get('total_pods', 0)} pods ({failing} failing)")
+            elif action_name == "get_eks_events" and data.get("warning_events"):
+                summary_parts.append(f"eks:{data.get('total_warning_count', 0)} warning events")
+            elif action_name == "list_eks_deployments" and data.get("deployments"):
+                degraded = len(data.get("degraded_deployments", []))
+                summary_parts.append(f"eks:{data.get('total_deployments', 0)} deployments ({degraded} degraded)")
+            elif action_name == "get_eks_node_health" and data.get("nodes"):
+                not_ready = data.get("not_ready_count", 0)
+                summary_parts.append(f"eks:{data.get('total_nodes', 0)} nodes ({not_ready} not ready)")
+            elif action_name == "get_eks_pod_logs" and data.get("logs"):
+                summary_parts.append("eks:pod logs retrieved")
+            elif action_name == "get_eks_deployment_status" and data.get("deployment_name"):
+                summary_parts.append("eks:deployment status retrieved")
         else:
             # Log action failures for debugging
             error_msg = f"{action_name}:FAILED({result.error[:50] if result.error else 'unknown'})"
