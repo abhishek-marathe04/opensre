@@ -47,6 +47,25 @@ def test_config_verify_ssl_defaults_to_true() -> None:
     assert config.verify_ssl is True
 
 
+def test_config_ca_bundle_defaults_to_empty() -> None:
+    config = SplunkIntegrationConfig(base_url="https://splunk:8089", token="tok")
+    assert config.ca_bundle == ""
+
+
+def test_config_ca_bundle_stored() -> None:
+    config = SplunkIntegrationConfig(
+        base_url="https://splunk:8089", token="tok", ca_bundle="/etc/ssl/corp-ca.pem"
+    )
+    assert config.ca_bundle == "/etc/ssl/corp-ca.pem"
+
+
+def test_config_ca_bundle_strips_whitespace() -> None:
+    config = SplunkIntegrationConfig(
+        base_url="https://splunk:8089", token="tok", ca_bundle="  /etc/ssl/corp-ca.pem  "
+    )
+    assert config.ca_bundle == "/etc/ssl/corp-ca.pem"
+
+
 def test_config_rejects_unknown_fields() -> None:
     from pydantic import ValidationError
 
@@ -70,6 +89,35 @@ def test_splunk_config_is_configured() -> None:
     assert SplunkConfig(base_url="https://splunk:8089", token="tok").is_configured is True
     assert SplunkConfig(base_url="", token="tok").is_configured is False
     assert SplunkConfig(base_url="https://splunk:8089", token="").is_configured is False
+
+
+def test_splunk_config_ssl_verify_returns_bool_when_no_ca_bundle() -> None:
+    cfg = SplunkConfig(base_url="https://splunk:8089", token="tok", verify_ssl=True)
+    assert cfg.ssl_verify is True
+
+    cfg_false = SplunkConfig(base_url="https://splunk:8089", token="tok", verify_ssl=False)
+    assert cfg_false.ssl_verify is False
+
+
+def test_splunk_config_ssl_verify_returns_ca_bundle_path_when_set() -> None:
+    cfg = SplunkConfig(
+        base_url="https://splunk:8089",
+        token="tok",
+        verify_ssl=True,
+        ca_bundle="/etc/ssl/corp-ca.pem",
+    )
+    assert cfg.ssl_verify == "/etc/ssl/corp-ca.pem"
+
+
+def test_splunk_config_ca_bundle_takes_precedence_over_verify_ssl_false() -> None:
+    """CA bundle path must win even when verify_ssl=False is also set."""
+    cfg = SplunkConfig(
+        base_url="https://splunk:8089",
+        token="tok",
+        verify_ssl=False,
+        ca_bundle="/etc/ssl/corp-ca.pem",
+    )
+    assert cfg.ssl_verify == "/etc/ssl/corp-ca.pem"
 
 
 # ── build_splunk_spl_query ────────────────────────────────────────────────────
@@ -182,6 +230,51 @@ def test_validate_access_connection_error() -> None:
         result = client.validate_access()
     assert result["success"] is False
     assert "Connection refused" in result["error"]
+
+
+def test_validate_access_passes_ca_bundle_to_httpx() -> None:
+    config = SplunkConfig(
+        base_url="https://splunk:8089",
+        token="tok",
+        ca_bundle="/etc/ssl/corp-ca.pem",
+    )
+    client = SplunkClient(config)
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.return_value = {"entry": [{"content": {"version": "9.1.0"}}]}
+    captured_verify: list[object] = []
+
+    def fake_get(url, *, headers, params, timeout, verify):
+        captured_verify.append(verify)
+        return mock_response
+
+    with patch("app.services.splunk.client.httpx.get", side_effect=fake_get):
+        result = client.validate_access()
+
+    assert result["success"] is True
+    assert captured_verify[0] == "/etc/ssl/corp-ca.pem"
+
+
+def test_search_logs_passes_ca_bundle_to_httpx() -> None:
+    config = SplunkConfig(
+        base_url="https://splunk:8089",
+        token="tok",
+        ca_bundle="/etc/ssl/corp-ca.pem",
+    )
+    client = SplunkClient(config)
+    captured_verify: list[object] = []
+
+    def fake_post(url, *, headers, data, timeout, verify):
+        captured_verify.append(verify)
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.return_value = None
+        mock_resp.text = ""
+        return mock_resp
+
+    with patch("app.services.splunk.client.httpx.post", side_effect=fake_post):
+        client.search_logs(query="index=main | head 10")
+
+    assert captured_verify[0] == "/etc/ssl/corp-ca.pem"
 
 
 # ── SplunkClient.search_logs ──────────────────────────────────────────────────
@@ -431,3 +524,29 @@ def test_env_loader_splunk_verify_ssl_false(monkeypatch: pytest.MonkeyPatch) -> 
     splunk = next((i for i in integrations if i["service"] == "splunk"), None)
     assert splunk is not None
     assert splunk["credentials"]["verify_ssl"] is False
+
+
+def test_env_loader_splunk_ca_bundle(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.integrations.catalog import load_env_integrations
+
+    monkeypatch.setenv("SPLUNK_URL", "https://splunk.test:8089")
+    monkeypatch.setenv("SPLUNK_TOKEN", "tok")
+    monkeypatch.setenv("SPLUNK_CA_BUNDLE", "/etc/ssl/corp-ca.pem")
+
+    integrations = load_env_integrations()
+    splunk = next((i for i in integrations if i["service"] == "splunk"), None)
+    assert splunk is not None
+    assert splunk["credentials"]["ca_bundle"] == "/etc/ssl/corp-ca.pem"
+
+
+def test_env_loader_splunk_ca_bundle_default_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.integrations.catalog import load_env_integrations
+
+    monkeypatch.setenv("SPLUNK_URL", "https://splunk.test:8089")
+    monkeypatch.setenv("SPLUNK_TOKEN", "tok")
+    monkeypatch.delenv("SPLUNK_CA_BUNDLE", raising=False)
+
+    integrations = load_env_integrations()
+    splunk = next((i for i in integrations if i["service"] == "splunk"), None)
+    assert splunk is not None
+    assert splunk["credentials"]["ca_bundle"] == ""
