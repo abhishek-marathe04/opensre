@@ -638,7 +638,9 @@ def validate_splunk_integration(
     """Validate Splunk credentials by calling the server info endpoint."""
     from app.services.splunk import SplunkClient, SplunkConfig
 
-    client = SplunkClient(SplunkConfig(base_url=base_url, token=token, index=index, verify_ssl=verify_ssl))
+    client = SplunkClient(
+        SplunkConfig(base_url=base_url, token=token, index=index, verify_ssl=verify_ssl)
+    )
     result = client.validate_access()
     if result.get("success"):
         return IntegrationHealthResult(ok=True, detail=result.get("detail", "Splunk connected."))
