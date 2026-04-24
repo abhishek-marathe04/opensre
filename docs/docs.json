@@ -74,6 +74,7 @@
               "prefect",
               "rabbitmq",
               "sentry",
+              "splunk",
               "vercel"
             ]
           }
