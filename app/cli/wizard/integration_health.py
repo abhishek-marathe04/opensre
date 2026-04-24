@@ -633,12 +633,12 @@ def validate_discord_bot(*, bot_token: str) -> IntegrationHealthResult:
 
 
 def validate_splunk_integration(
-    *, base_url: str, token: str, index: str = "main"
+    *, base_url: str, token: str, index: str = "main", verify_ssl: bool = True
 ) -> IntegrationHealthResult:
     """Validate Splunk credentials by calling the server info endpoint."""
     from app.services.splunk import SplunkClient, SplunkConfig
 
-    client = SplunkClient(SplunkConfig(base_url=base_url, token=token, index=index))
+    client = SplunkClient(SplunkConfig(base_url=base_url, token=token, index=index, verify_ssl=verify_ssl))
     result = client.validate_access()
     if result.get("success"):
         return IntegrationHealthResult(ok=True, detail=result.get("detail", "Splunk connected."))

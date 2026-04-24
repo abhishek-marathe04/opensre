@@ -1590,6 +1590,7 @@ def resolve_effective_integrations(
         "openobserve",
         "opensearch",
         "alertmanager",
+        "splunk",
     )
     for service in direct_services:
         resolved_integration = classified_integrations.get(service)

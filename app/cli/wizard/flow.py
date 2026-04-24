@@ -1392,18 +1392,32 @@ def _configure_splunk() -> tuple[str, str]:
             "Default Splunk index to search",
             default=_string_value(credentials.get("index"), "main"),
         )
+        verify_ssl = _confirm(
+            "Verify SSL certificate?",
+            default=bool(credentials.get("verify_ssl", True)),
+        )
         with _console.status("Validating Splunk integration...", spinner="dots"):
-            result = validate_splunk_integration(base_url=base_url, token=token, index=index)
+            result = validate_splunk_integration(
+                base_url=base_url, token=token, index=index, verify_ssl=verify_ssl
+            )
         _render_integration_result("Splunk", result)
         if result.ok:
             upsert_integration(
                 "splunk",
-                {"credentials": {"base_url": base_url, "token": token, "index": index}},
+                {
+                    "credentials": {
+                        "base_url": base_url,
+                        "token": token,
+                        "index": index,
+                        "verify_ssl": verify_ssl,
+                    }
+                },
             )
             env_path = sync_env_values(
                 {
                     "SPLUNK_URL": base_url,
                     "SPLUNK_INDEX": index,
+                    "SPLUNK_VERIFY_SSL": "true" if verify_ssl else "false",
                     # Do NOT write SPLUNK_TOKEN to .env — it goes to the credential store only
                 }
             )
@@ -1488,6 +1502,7 @@ def _configure_selected_integrations() -> tuple[list[str], str | None]:
             label="OpenClaw",
             hint="Connect OpenSRE to OpenClaw so your AI coding assistant can trigger investigations",
         ),
+        Choice(value="splunk", label="Splunk", hint="Query logs from Splunk"),
         Choice(
             value="skip",
             label="Skip for now",
