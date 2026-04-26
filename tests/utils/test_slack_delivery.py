@@ -93,7 +93,9 @@ def test_call_reactions_api_exception_returns_false(monkeypatch: pytest.MonkeyPa
 def test_call_reactions_api_sends_correct_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
-    def _fake_post(url: str, *, json: dict[str, Any], headers: dict[str, str], **_kw: Any) -> MagicMock:
+    def _fake_post(
+        url: str, *, json: dict[str, Any], headers: dict[str, str], **_kw: Any
+    ) -> MagicMock:
         captured["url"] = url
         captured["json"] = json
         captured["headers"] = headers
@@ -252,7 +254,9 @@ def test_post_direct_exception_returns_false(monkeypatch: pytest.MonkeyPatch) ->
 def test_post_direct_sends_authorization_header(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
-    def _fake_post(_url: str, *, json: dict[str, Any], headers: dict[str, str], **_kw: Any) -> MagicMock:
+    def _fake_post(
+        _url: str, *, json: dict[str, Any], headers: dict[str, str], **_kw: Any
+    ) -> MagicMock:
         captured["headers"] = headers
         captured["json"] = json
         return _mock_response(200, {"ok": True, "ts": "1.0"})
@@ -388,7 +392,9 @@ def test_post_via_incoming_webhook_with_blocks(monkeypatch: pytest.MonkeyPatch) 
     assert captured["json"]["blocks"] == blocks
 
 
-def test_post_via_incoming_webhook_http_error_returns_false(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_post_via_incoming_webhook_http_error_returns_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(
         "app.utils.slack_delivery.httpx.post",
         lambda *_a, **_kw: _mock_response(400, raise_for_status=True),
