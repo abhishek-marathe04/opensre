@@ -67,7 +67,8 @@
               "jira",
               "prefect",
               "google-docs",
-              "discord"
+              "discord",
+              "airflow"
             ]
           }
         ]
