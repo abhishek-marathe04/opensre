@@ -43,6 +43,7 @@ dependencies = [
     "click>=8.1.0",
     "rich>=15.0.0",
     "questionary>=2.1.1",
+    "prompt_toolkit>=3.0.0",
     "PyYAML>=6.0",
     "tzdata>=2026.1",
     # OpenTelemetry
@@ -88,6 +89,12 @@ dev = [
     "types-PyMySQL",
     "types-PyYAML",
     "boto3-stubs[essential]",
+    "huggingface_hub>=0.26.0",
+    "datasets>=3.0.0",
+]
+opensre-hub = [
+    "huggingface_hub>=0.26.0",
+    "datasets>=3.0.0",
 ]
 kafka = [
     "confluent-kafka>=2.14.0",
