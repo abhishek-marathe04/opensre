@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from app.integrations.azure_sql import DEFAULT_AZURE_SQL_PORT
 from app.services.coralogix import build_coralogix_logs_query
+from app.services.splunk import build_splunk_spl_query
 from app.tools.GrafanaLogsTool import _map_pipeline_to_service_name
 
 logger = logging.getLogger(__name__)
@@ -1318,8 +1319,6 @@ def detect_sources(
                 or annotations.get("summary", "")
                 or raw_alert.get("alert_name", "")
             ).strip()
-
-            from app.services.splunk import build_splunk_spl_query
 
             default_query = build_splunk_spl_query(
                 raw_query=raw_query,

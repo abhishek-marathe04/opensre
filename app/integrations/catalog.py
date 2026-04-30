@@ -1468,29 +1468,27 @@ def load_env_integrations() -> list[dict[str, Any]]:
     splunk_multi = _parse_instances_env("SPLUNK_INSTANCES", "splunk")
     if splunk_multi is not None:
         integrations.append(splunk_multi)
-        splunk_url = ""
-        splunk_token = ""
     else:
         splunk_url = os.getenv("SPLUNK_URL", "").strip()
         splunk_token = os.getenv("SPLUNK_TOKEN", "").strip()
-    if splunk_url and splunk_token:
-        splunk_config = SplunkIntegrationConfig.model_validate(
-            {
-                "base_url": splunk_url,
-                "token": splunk_token,
-                "index": os.getenv("SPLUNK_INDEX", "main").strip(),
-                "verify_ssl": os.getenv("SPLUNK_VERIFY_SSL", "true").strip().lower() != "false",
-                "ca_bundle": os.getenv("SPLUNK_CA_BUNDLE", "").strip(),
-            }
-        )
-        integrations.append(
-            {
-                "id": "env-splunk",
-                "service": "splunk",
-                "status": "active",
-                "credentials": splunk_config.model_dump(exclude={"integration_id"}),
-            }
-        )
+        if splunk_url and splunk_token:
+            splunk_config = SplunkIntegrationConfig.model_validate(
+                {
+                    "base_url": splunk_url,
+                    "token": splunk_token,
+                    "index": os.getenv("SPLUNK_INDEX", "main").strip(),
+                    "verify_ssl": os.getenv("SPLUNK_VERIFY_SSL", "true").strip().lower() != "false",
+                    "ca_bundle": os.getenv("SPLUNK_CA_BUNDLE", "").strip(),
+                }
+            )
+            integrations.append(
+                {
+                    "id": "env-splunk",
+                    "service": "splunk",
+                    "status": "active",
+                    "credentials": splunk_config.model_dump(exclude={"integration_id"}),
+                }
+            )
 
     return integrations
 

@@ -121,8 +121,8 @@ class SplunkSearchTool(BaseTool):
             if any(kw in log.get("message", "").lower() for kw in _ERROR_KEYWORDS)
         ]
 
-        compacted_logs = compact_logs(logs, limit=50)
-        compacted_error_logs = compact_logs(error_logs, limit=30)
+        compacted_logs = compact_logs(logs, limit=limit)
+        compacted_error_logs = compact_logs(error_logs, limit=limit)
 
         result_data: dict[str, Any] = {
             "source": "splunk_logs",
