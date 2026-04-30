@@ -563,7 +563,8 @@ class SplunkIntegrationConfig(StrictConfigModel):
     @classmethod
     def _normalize_ca_bundle(cls, value: object) -> str:
         return str(value or "").strip()
-    
+
+
 class ArgoCDIntegrationConfig(StrictConfigModel):
     """Normalized Argo CD credentials used by resolution and verification flows."""
 
